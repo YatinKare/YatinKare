@@ -1,0 +1,10 @@
+{
+  "name": "yatinkare-profile",
+  "private": true,
+  "scripts": {
+    "export:card": "node scripts/export-card.cjs"
+  },
+  "devDependencies": {
+    "playwright-core": "1.60.0"
+  }
+}

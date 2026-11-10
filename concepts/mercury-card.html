@@ -1,0 +1,101 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Yatin — Mercury</title><style>
+*{box-sizing:border-box}body{margin:0;font-family:var(--font-sans,Arial,sans-serif);color:var(--foreground,#e5e7eb)}
+.composition{position:relative;aspect-ratio:1.8;overflow:hidden;container-type:inline-size}
+canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+.card{position:absolute;left:8%;top:12%;width:84%;height:76%;border-radius:3cqw;background:#101110;border:1px solid #ffffff25;color:#efeee7;display:grid;grid-template-columns:36% minmax(0,1fr);overflow:hidden}
+.portrait{position:relative;min-width:0;min-height:0;overflow:hidden}
+.avatar{display:block;width:100%;height:100%;object-fit:cover;object-position:58% 75%;transform:scale(1.725);transform-origin:70% 80%}
+.info{padding:3.8cqw 4cqw 3.5cqw;display:flex;flex-direction:column;min-width:0}
+h1{font-family:Georgia,'Times New Roman',serif;font-size:5cqw;line-height:1.06;letter-spacing:-.045em;font-weight:400;margin:0 0 1cqw}
+p{margin:0;color:#aaa9a3;font-size:1.65cqw;line-height:1.65}.education{margin-bottom:2cqw;color:#deddd5}
+.about{margin-bottom:2cqw}.about strong{font-weight:400;color:#deddd5}
+.now{display:grid;grid-template-columns:5.7cqw 1fr;gap:1cqw;align-items:baseline;font-size:1.6cqw;line-height:1.65;margin:0 0 1cqw}.now dt{font-family:Georgia,'Times New Roman',serif;font-style:italic;color:#888d80}.now dd{margin:0;color:#deddd5}.author{color:#888d80;font-size:1.4cqw}
+.contact{display:flex;gap:2cqw;align-items:center;margin-top:auto;padding-top:1.9cqw;font-size:1.5cqw}.contact a{color:#d0d1c7;text-decoration:underline;text-decoration-color:#777f6866;text-underline-offset:.45cqw;text-decoration-thickness:1px}.contact a:hover{color:#fff;text-decoration-color:#fff}.contact a:focus-visible{outline:2px solid #d4deed;outline-offset:4px;border-radius:2px}
+</style></head><body><div class="composition" id="composition"><canvas id="river" aria-label="A continuous stream of silver mercury flowing along the edge of Yatin’s profile card"></canvas><article class="card" aria-label="Yatin Kare’s profile">
+<div class="portrait"><img class="avatar" src="../assets/waterfall-portrait.png" alt="Yatin sitting beside a waterfall" width="1356" height="1808"></div>
+<div class="info">
+<h1>Yatin Kare</h1>
+<p class="education">Computer Science at the University of Georgia.</p>
+<p class="about">I build with <strong>Python, TypeScript &amp; Go.</strong><br>Into AI agents, developer tools and self-hosting.</p>
+<dl class="now"><dt>Building</dt><dd>Hermes Agent Home Lab</dd></dl>
+<dl class="now"><dt>Reading</dt><dd><em>Zero to One</em><br><span class="author">Peter Thiel</span></dd></dl>
+<nav class="contact" aria-label="Contact and writing"><a href="https://www.linkedin.com/in/yatin-kare" target="_blank" rel="noopener noreferrer">LinkedIn</a><a href="mailto:yatin.kare@gmail.com">Email</a><a href="https://yatinkare.com/blog" target="_blank" rel="noopener noreferrer">Blog</a></nav>
+</div>
+</article></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+<script type="module">
+import * as T from 'three';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+const canvas=document.querySelector('#river');
+try {
+const renderer=new T.WebGLRenderer({canvas,alpha:true,antialias:true,premultipliedAlpha:false});
+renderer.setPixelRatio(2);renderer.setClearColor(0,0);renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.25;
+const scene=new T.Scene(),camera=new T.OrthographicCamera(-2.7,2.7,1.5,-1.5,.1,20);camera.position.set(0,0,5);
+const room=new RoomEnvironment(),pmrem=new T.PMREMGenerator(renderer),env=pmrem.fromScene(room,.02);scene.environment=env.texture;room.dispose();pmrem.dispose();
+const material=new T.MeshPhysicalMaterial({color:0xe8ebee,metalness:1,roughness:.13,envMapIntensity:1.5,clearcoat:.15});
+// Match the card's CSS bounds exactly in the orthographic camera's coordinates.
+const halfWidth=2.7*.84,halfHeight=1.5*.76,corner=5.4*.03;
+const path=new T.Path();
+path.moveTo(-halfWidth+corner,halfHeight);
+path.lineTo(halfWidth-corner,halfHeight);
+path.absarc(halfWidth-corner,halfHeight-corner,corner,Math.PI/2,0,true);
+path.lineTo(halfWidth,-halfHeight+corner);
+path.absarc(halfWidth-corner,-halfHeight+corner,corner,0,-Math.PI/2,true);
+path.lineTo(-halfWidth+corner,-halfHeight);
+path.absarc(-halfWidth+corner,-halfHeight+corner,corner,-Math.PI/2,-Math.PI,true);
+path.lineTo(-halfWidth,halfHeight-corner);
+path.absarc(-halfWidth+corner,halfHeight-corner,corner,Math.PI,Math.PI/2,true);
+path.arcLengthDivisions=1600;path.updateArcLengths();
+const N=400,M=40,centers=[],tangents=[];
+for(let i=0;i<=N;i++){centers.push(path.getPointAt(i/N));tangents.push(path.getTangentAt(i/N).normalize());}
+// One watertight surface: faster currents are blended into its cross-section.
+const positions=new Float32Array((N+1)*(M+1)*3),indices=[];
+for(let i=0;i<N;i++)for(let j=0;j<M;j++){const a=i*(M+1)+j,b=a+M+1;indices.push(a,a+1,b,a+1,b+1,b);}
+const geometry=new T.BufferGeometry();
+geometry.setAttribute('position',new T.BufferAttribute(positions,3).setUsage(T.DynamicDrawUsage));
+geometry.setIndex(indices);scene.add(new T.Mesh(geometry,material));
+function periodicDistance(a,b){const d=Math.abs(a-b)%1;return Math.min(d,1-d);}
+function pulse(u,center,width){const d=periodicDistance(u,center);return Math.exp(-d*d/(width*width));}
+function section(u,t){
+ const flow=t/16;
+ // A substantial minimum depth keeps every part of the current full.
+ let bulk=.061;
+ for(let j=0;j<4;j++)bulk+=(.025+.008*Math.cos(j*2.1))*pulse(u,(flow+j/4)%1,.046);
+ const fast=pulse(u,(flow*1.18+.23)%1,.085)+.8*pulse(u,(flow*1.18+.73)%1,.065);
+ const faster=pulse(u,(flow*1.36+.46)%1,.075)+.7*pulse(u,(flow*1.36+.96)%1,.06);
+ return {bulk,fast,faster,flow};
+}
+function frame(t){
+ for(let i=0;i<=N;i++){
+  const u=i/N,p=centers[i],v=tangents[i],f=section(u,t);
+  // Local ridges weave across the same fluid body, then flatten back into it.
+  const angleA=1.05+.45*Math.sin(2*Math.PI*(u-f.flow*1.18));
+  const angleB=2.10+.40*Math.sin(2*Math.PI*(u-f.flow*1.36)+1.7);
+  for(let j=0;j<=M;j++){
+   const a=j/M*Math.PI*2,c=Math.cos(a),s=Math.sin(a),k=(i*(M+1)+j)*3;
+   const da=Math.atan2(Math.sin(a-angleA),Math.cos(a-angleA));
+   const db=Math.atan2(Math.sin(a-angleB),Math.cos(a-angleB));
+   const ridgeA=.046*f.fast*Math.exp(-da*da/.20);
+   const ridgeB=.040*f.faster*Math.exp(-db*db/.20);
+   const r=f.bulk+ridgeA+ridgeB+.0012*Math.sin(2*Math.PI*(u*23-f.flow*23));
+   positions[k]=p.x-v.y*r*c;
+   positions[k+1]=p.y+v.x*r*c;
+   positions[k+2]=.045+r*.78*s;
+  }
+ }
+ geometry.attributes.position.needsUpdate=true;geometry.computeVertexNormals();
+ const n=geometry.attributes.normal.array;
+ function join(a,b){for(let k=0;k<3;k++){const m=(n[a*3+k]+n[b*3+k])*.5;n[a*3+k]=m;n[b*3+k]=m;}}
+ for(let j=0;j<=M;j++)join(j,N*(M+1)+j);
+ for(let i=0;i<=N;i++)join(i*(M+1),i*(M+1)+M);
+ geometry.attributes.normal.needsUpdate=true;
+ renderer.render(scene,camera);
+}
+let running=!matchMedia('(prefers-reduced-motion: reduce)').matches,t=0,last=0,speed=1;
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+reduced.addEventListener('change',()=>{running=!reduced.matches;});
+new ResizeObserver(()=>{renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);frame(t);}).observe(canvas);
+window.mercuryFrame=(seconds)=>{running=false;renderer.setAnimationLoop(null);t=seconds;frame(t);};
+renderer.setAnimationLoop(now=>{if(last&&running&&!document.hidden)t+=Math.min((now-last)/1000,.05)*speed;last=now;frame(t);});
+}catch(e){console.error('Mercury renderer:',e);}
+</script></body></html>
